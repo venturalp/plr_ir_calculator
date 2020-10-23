@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg  viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>xxxhdpi/loading / inline loading / loading message</title>
+    <defs>
+        <circle id="path-1" cx="8" cy="8" r="8"></circle>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="16" height="16" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+    </defs>
+    <g id="Fatura-Hosp" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Upload-de-arquivos-|-03-|-03" transform="translate(-760.000000, -459.000000)">
+            <g id="loading-/-small" transform="translate(760.000000, 459.000000)">
+                <g id="icon-/-status-/-loading––white-/-16">
+                    <circle id="Oval-3" stroke="#D8DCE3" stroke-width="3" cx="8" cy="8" r="6.5"></circle>
+                    <use id="Oval-3" stroke="#0062FF" mask="url(#mask-2)" stroke-width="6" stroke-dasharray="20,33" transform="translate(8.000000, 8.000000) scale(-1, -1) translate(-8.000000, -8.000000) " xlink:href="#path-1"></use>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
