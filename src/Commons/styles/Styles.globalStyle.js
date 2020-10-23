@@ -11,19 +11,6 @@ export const GlobalStylesMUI = theme => ({
         height: '100%',
       },
     },
-    textarea: {
-      fontSize: '1rem',
-      lineHeight: '1.188rem',
-      borderRadius: '2px',
-      backgroundColor: theme.palette.common.white,
-      outlineColor: theme.palette.primary.main,
-      borderColor: theme.custom.inputBorders,
-      padding: '12px 15px',
-      fontFamily: 'Roboto, sans-serif',
-      '&:disabled': {
-        backgroundColor: theme.custom.form.disabledBackground,
-      },
-    },
   },
 })
 
