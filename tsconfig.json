@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "noImplicitAny": true,
+    "module": "es6",
+    "target": "es5",
+    "jsx": "react",
+    "sourceMap": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "types": ["node", "@types/jest"],
+    "baseUrl": "./src",
+    "paths": {
+      "Modules": ["Modules"],
+      "Assets": ["Assets"],
+      "Config": ["Config"],
+      "Commons": ["Commons"]
+    }
+  },
+  "exclude": ["./src/**/*.spec.ts", "node_modules"],
+  "include": ["src"]
+}
