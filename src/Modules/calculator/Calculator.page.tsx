@@ -4,16 +4,22 @@ import { CalculatorForm } from './Calculator.form'
 
 const useStyle = makeStyles({
   pageContainer: {
-    height: '100%'
-  }
+    minHeight: '100%',
+  },
 })
 
 const CalculatorPage: React.FC = () => {
   const classes = useStyle()
 
   return (
-    <Grid container justify="center" alignItems="center" alignContent="center" className={classes.pageContainer}>
-      <CalculatorForm/>
+    <Grid
+      container
+      justify="center"
+      alignItems="center"
+      alignContent="center"
+      className={classes.pageContainer}
+    >
+      <CalculatorForm />
     </Grid>
   )
 }

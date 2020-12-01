@@ -2,9 +2,9 @@ import {
   IErrorValidation,
   validateData,
 } from 'Commons/validate/Validate.Helpers'
-import yup, { ObjectSchema } from 'yup'
+import * as yup from 'yup'
 
-const calculatorFormScheme: ObjectSchema = yup.object().shape({
+const calculatorFormScheme: yup.ObjectSchema = yup.object().shape({
   monthsWorked: yup
     .number()
     .typeError('Meses de trabalho deve ser um número')
@@ -13,7 +13,7 @@ const calculatorFormScheme: ObjectSchema = yup.object().shape({
   grossSalary: yup.number().typeError('Salário bruto deve ser um número'),
 })
 
-const calculatorGoalsScheme: ObjectSchema = yup.object().shape({
+const calculatorGoalsScheme: yup.ObjectSchema = yup.object().shape({
   goals: yup.array().of(
     yup.object().shape({
       minimum: yup
