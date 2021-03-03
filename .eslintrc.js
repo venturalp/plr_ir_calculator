@@ -56,12 +56,7 @@ module.exports = {
     'react/static-property-placement': 0,
     'comma-dangle': 2,
     'react/jsx-props-no-spreading': 0,
-    'react/jsx-filename-extension': [
-      1,
-      {
-        extensions: ['.js', '.jsx'],
-      },
-    ],
+    'react/jsx-filename-extension': [0],
     'react/prefer-stateless-function': 'off',
     'jsx-a11y/anchor-is-valid': [
       'error',

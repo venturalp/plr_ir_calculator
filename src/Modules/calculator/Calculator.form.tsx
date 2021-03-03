@@ -17,42 +17,44 @@ import React, { useState } from 'react'
 import { useForm, UseFormMethods } from 'react-hook-form'
 import AddCircleOutlineIcon from '@material-ui/icons/AddCircleOutline'
 import { revertBRL } from './Calculator.math'
-import {
-  validateCalculatorForm,
-  validateCalculatorGoals,
-} from './Calculator.validate'
-
-interface CalculatorFormType {
-  teste?: boolean
-}
+import { validateCalculatorForm } from './Calculator.validate'
+import currency from 'currency.js'
+import { irPlrTable, Aliquota } from './Calculator.Consts'
 
 interface FormError {
   error?: boolean
   message?: string
 }
 
+interface CalcResults {
+  netValue: number
+  aliquota: number
+  deduction: number
+}
+
 interface CalculatorFormErrors {
   monthsWorked?: FormError
   grossSalary?: FormError
   plrWeight?: FormError
-  goals?: Array<any>
-}
-
-interface ICalculatorInputs {
-  minimum?: number | string
-  target?: number | string
-  maximum?: number | string
+  performance?: FormError
+  company?: FormError
 }
 
 interface ICalculatorForm extends GenericObject {
-  monthsWorked?: number | string
+  monthsWorked?: string | number
   grossSalary?: string | number
   plrWeight?: string | number
-  goals?: {
-    values: Array<ICalculatorInputs>
-    scale: Array<ICalculatorInputs>
-    achieved?: number | string
-  }
+  company?: string | number
+  performance?: string | number
+}
+
+interface IResults {
+  netValue?: number
+  grossValue?: number
+  aliquota?: number
+  deduceFrom?: number
+  deduction?: number
+  toDeduce?: number
 }
 
 const useStyle = makeStyles((theme: Theme) => ({
@@ -107,42 +109,71 @@ const useStyle = makeStyles((theme: Theme) => ({
   },
 }))
 
-export const CalculatorForm = ({ teste, ...props }: CalculatorFormType) => {
+export const CalculatorForm: React.FC = () => {
   const { register, handleSubmit } = useForm<UseFormMethods>()
   const [goalsFields, setGoalsFields] = useState<number | undefined>(1)
   const [errors, setErrors] = useState<CalculatorFormErrors>({})
+  const [results, setResults] = useState<IResults>({})
   const classes = useStyle()
 
   const onSubmit = async (data: ICalculatorForm): Promise<void> => {
-    console.log(data)
-    const formData: ICalculatorForm = {
-      grossSalary: revertBRL(data.grossSalary as string),
-      monthsWorked: data.monthsWorked
-        ? parseInt(data.monthsWorked as string, 10)
-        : 0,
-      plrWeight: data.plrWeight ? parseFloat(data.plrWeight as string) : 0,
-      goals: [],
+    setErrors({})
+    const formSubmit: ICalculatorForm = {
+      monthsWorked: parseInt(data?.monthsWorked?.toString(), 10),
+      company: revertBRL(data?.company?.toString()),
+      grossSalary: revertBRL(data?.grossSalary?.toString()),
+      performance: revertBRL(data?.performance?.toString()),
+      plrWeight: revertBRL(data?.plrWeight?.toString()),
     }
+    const validateForm = await validateCalculatorForm(formSubmit)
+    if (!validateForm.isValid) setErrors(validateForm.errors)
+    else {
+      let netValue: number = currency(formSubmit.monthsWorked)
+        .divide(12)
+        .multiply(formSubmit.plrWeight)
+        .multiply(formSubmit.grossSalary).value
+      const performanceValue: number = currency(formSubmit.performance).divide(
+        100,
+      ).value
+      const companyValue: number = currency(formSubmit.company).divide(100)
+        .value
 
-    new Array(goalsFields).fill(null).forEach((el: any, index: number) => {
-      formData.goals.push({
-        minimum: data?.[`minimum${index}`]
-          ? parseFloat(data?.[`minimum${index}`])
-          : 0,
-        average: parseFloat(data?.[`average${index}`]),
-        maximum: parseFloat(data?.[`maximum${index}`]),
-        achieved: parseFloat(data?.[`achieved${index}`]),
-      })
-    })
+      netValue = currency(netValue)
+        .multiply(performanceValue)
+        .multiply(companyValue).value
+      const getAliquota: Aliquota = irPlrTable.filter(
+        (al: Aliquota): boolean => {
+          if (netValue >= al.min) {
+            if (al.max) {
+              if (netValue <= al.max) return true
+            } else {
+              return true
+            }
+          }
 
-    console.log(await validateCalculatorForm(formData))
-    console.log(await validateCalculatorGoals(formData))
+          return false
+        },
+      )?.[0]
 
-    console.log('formData', formData)
-  }
+      const deduceFrom: number = currency(netValue).multiply(
+        getAliquota.percent,
+      ).value
+      const toDeduce: number = currency(deduceFrom).subtract(
+        getAliquota.deduction,
+      ).value
+      setResults({ ...results, grossValue: netValue })
+      netValue = currency(netValue).subtract(toDeduce).value
 
-  const addGoal = (e: React.MouseEvent<SVGSVGElement, MouseEvent>): void => {
-    setGoalsFields((previousValue: number) => previousValue + 1)
+      setResults((previous: IResults) => ({
+        ...previous,
+        aliquota: currency(getAliquota.percent, { precision: 3 }).multiply(100)
+          .value,
+        deduceFrom,
+        toDeduce,
+        deduction: getAliquota.deduction,
+        netValue,
+      }))
+    }
   }
 
   return (
@@ -176,14 +207,13 @@ export const CalculatorForm = ({ teste, ...props }: CalculatorFormType) => {
               </FormHelperText>
             </FormControl>
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={2}>
             <FormControl error={errors?.plrWeight?.error} fullWidth>
               <FormLabel htmlFor="plrWeight">Peso</FormLabel>
               <TextField
                 id="plrWeight"
                 name="plrWeight"
-                type="number"
-                placeholder="0"
+                placeholder="ex: 1,25"
                 inputRef={register}
                 error={errors?.plrWeight?.error}
               />
@@ -192,13 +222,14 @@ export const CalculatorForm = ({ teste, ...props }: CalculatorFormType) => {
               </FormHelperText>
             </FormControl>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={3}>
             <FormControl error={errors?.grossSalary?.error} fullWidth>
               <FormLabel htmlFor="grossSalary">Salário bruto</FormLabel>
               <TextField
                 id="grossSalary"
                 inputRef={register}
                 error={errors?.grossSalary?.error}
+                placeholder="ex: 1000,00"
                 InputProps={{
                   id: 'grossSalary',
                   name: 'grossSalary',
@@ -215,213 +246,140 @@ export const CalculatorForm = ({ teste, ...props }: CalculatorFormType) => {
               </FormHelperText>
             </FormControl>
           </Grid>
-        </Grid>
-        <Typography variant="h2">Metas</Typography>
-        <Grid container justify="space-between">
-          {new Array(goalsFields).fill('goals').map((el: any, i: number) => {
-            return (
-              <Grid container key={`goalsWrapper${el}${i}`}>
-                {/* <Grid
-                  container
-                  spacing={2}
-                  key={`row1${el}${i}`}
-                  className={classes.goalsRow}
-                >
-
-                </Grid> */}
-                <Grid
-                  container
-                  spacing={2}
-                  key={`${el}${i}`}
-                  className={classes.goalsRow}
-                >
-                  {i === goalsFields - 1 && (
-                    <AddCircleOutlineIcon
-                      className={classes.incrementGoals}
-                      onClick={addGoal}
-                    />
-                  )}
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.weight?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`weight${i}`}>Peso</FormLabel>
-                      <TextField
-                        id={`weight${i}`}
-                        name={`weight${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.weight?.error}
-                      />
-                      <FormHelperText error={errors?.goals?.[i]?.weight?.error}>
-                        {errors?.goals?.[i]?.weight?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.minimumValue?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`minimumValue${i}`}>
-                        Valor mínima
-                      </FormLabel>
-                      <TextField
-                        id={`minimumValue${i}`}
-                        name={`minimumValue${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.minimumValue?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.minimumValue?.error}
-                      >
-                        {errors?.goals?.[i]?.minimumValue?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.minimumScale?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`minimumScale${i}`}>
-                        Escala mínima
-                      </FormLabel>
-                      <TextField
-                        id={`minimumScale${i}`}
-                        name={`minimumScale${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.minimumScale?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.minimumScale?.error}
-                      >
-                        {errors?.goals?.[i]?.minimumScale?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.targetValue?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`targetValue${i}`}>
-                        Valor target
-                      </FormLabel>
-                      <TextField
-                        id={`targetValue${i}`}
-                        name={`targetValue${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.targetValue?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.targetValue?.error}
-                      >
-                        {errors?.goals?.[i]?.targetValue?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.targetScale?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`targetScale${i}`}>
-                        Escala target
-                      </FormLabel>
-                      <TextField
-                        id={`targetScale${i}`}
-                        name={`targetScale${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.targetScale?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.targetScale?.error}
-                      >
-                        {errors?.goals?.[i]?.targetScale?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.maximumValue?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`maximumValue${i}`}>
-                        Valor máxima
-                      </FormLabel>
-                      <TextField
-                        id={`maximumValue${i}`}
-                        name={`maximumValue${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.maximumValue?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.maximumValue?.error}
-                      >
-                        {errors?.goals?.[i]?.maximumValue?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.maximumScale?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`maximumScale${i}`}>
-                        Escala máxima
-                      </FormLabel>
-                      <TextField
-                        id={`maximumScale${i}`}
-                        name={`maximumScale${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.maximumScale?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.maximumScale?.error}
-                      >
-                        {errors?.goals?.[i]?.maximumScale?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                  <Grid item>
-                    <FormControl
-                      error={errors?.goals?.[i]?.achieved?.error}
-                      fullWidth
-                    >
-                      <FormLabel htmlFor={`achieved${i}`}>Alcançada</FormLabel>
-                      <TextField
-                        id={`achieved${i}`}
-                        name={`achieved${i}`}
-                        className={classes.noIncrementInput}
-                        inputRef={register}
-                        error={errors?.goals?.[i]?.achieved?.error}
-                      />
-                      <FormHelperText
-                        error={errors?.goals?.[i]?.achieved?.error}
-                      >
-                        {errors?.goals?.[i]?.achieved?.error}
-                      </FormHelperText>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </Grid>
-            )
-          })}
+          <Grid item xs={2}>
+            <FormControl error={errors?.plrWeight?.error} fullWidth>
+              <FormLabel htmlFor="plrWeight">Empresa</FormLabel>
+              <TextField
+                id="company"
+                inputRef={register}
+                error={errors?.company?.error}
+                placeholder="ex: 98,5"
+                InputProps={{
+                  id: 'company',
+                  name: 'company',
+                  inputComponent: InputBRLMask,
+                  endAdornment: (
+                    <InputAdornment position="end" disableTypography>
+                      %
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormHelperText error={errors?.company?.error}>
+                {errors?.company?.message}
+              </FormHelperText>
+            </FormControl>
+          </Grid>
+          <Grid item xs={2}>
+            <FormControl error={errors?.performance?.error} fullWidth>
+              <FormLabel htmlFor="performance">Desempenho</FormLabel>
+              <TextField
+                id="performance"
+                name="performance"
+                placeholder="ex: 1,25"
+                inputRef={register}
+                error={errors?.performance?.error}
+                InputProps={{
+                  id: 'performance',
+                  name: 'performance',
+                  inputComponent: InputBRLMask,
+                  endAdornment: (
+                    <InputAdornment position="end" disableTypography>
+                      %
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormHelperText error={errors?.performance?.error}>
+                {errors?.performance?.message}
+              </FormHelperText>
+            </FormControl>
+          </Grid>
         </Grid>
         <Grid container justify="center">
           <Grid>
-            <FormHelperText className="feedback-error" error>
-              Erros aqui
-            </FormHelperText>
+            {Object.keys(errors).map((key: any) => (
+              <FormHelperText className="feedback-error" error>
+                {errors[key].message}
+              </FormHelperText>
+            ))}
+          </Grid>
+          <Grid>
+            {Object.keys(results).length > 0 && (
+              <>
+                <Typography variant="h2">Cálculo</Typography>
+                <Typography>
+                  <b style={{ color: 'blue' }}>Valor bruto:</b>{' '}
+                  {currency(results.grossValue).format({
+                    decimal: ',',
+                    separator: '.',
+                    precision: 2,
+                    symbol: 'R$ ',
+                  })}
+                </Typography>
+                <Typography>
+                  <b>Alíquota:</b>{' '}
+                  {currency(results.aliquota).format({
+                    pattern: '# !',
+                    symbol: '%',
+                    decimal: ',',
+                    separator: '.',
+                  })}
+                </Typography>
+                <Typography>
+                  <b>Deduzir de:</b>{' '}
+                  {currency(results.grossValue).format({
+                    decimal: ',',
+                    separator: '.',
+                    precision: 2,
+                    symbol: 'R$ ',
+                  })}{' '}
+                  x{' '}
+                  {currency(results.aliquota).format({
+                    pattern: '# !',
+                    symbol: '%',
+                    decimal: ',',
+                    separator: '.',
+                  })}{' '}
+                  ={' '}
+                  {currency(results.deduceFrom).format({
+                    decimal: ',',
+                    separator: '.',
+                    precision: 2,
+                    symbol: 'R$ ',
+                  })}
+                </Typography>
+                <Typography>
+                  <b>Alíquota a Deduzir:</b>{' '}
+                  {currency(results.deduction).format({
+                    decimal: ',',
+                    separator: '.',
+                    precision: 2,
+                    symbol: 'R$ ',
+                  })}
+                </Typography>
+                <Typography>
+                  <b style={{ color: 'red' }}>Deduzir do valor bruto:</b>{' '}
+                  {currency(results.toDeduce).format({
+                    decimal: ',',
+                    separator: '.',
+                    precision: 2,
+                    symbol: 'R$ ',
+                  })}
+                </Typography>
+                <Typography>
+                  <b style={{ color: 'green' }}>Valor líquido:</b>{' '}
+                  {currency(results.netValue).format({
+                    decimal: ',',
+                    separator: '.',
+                    precision: 2,
+                    symbol: 'R$ ',
+                  })}
+                </Typography>
+              </>
+            )}
+          </Grid>
+          <Grid container justify="center">
             <Button>Calcular</Button>
           </Grid>
         </Grid>

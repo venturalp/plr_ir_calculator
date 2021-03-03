@@ -8,11 +8,7 @@ import { Snackbar } from '@material-ui/core'
 import { Alert } from 'Commons/alert/Alert'
 
 export const App: React.FC = () => {
-  const {
-    isLoading,
-    snackSettings,
-    setSnackSettings,
-  } = useApplicationStore()
+  const { isLoading, snackSettings, setSnackSettings } = useApplicationStore()
 
   const handleSnackClose = () => setSnackSettings({ opened: false })
 
@@ -30,7 +26,14 @@ export const App: React.FC = () => {
       </Snackbar>
       <Switch>
         {routes.map((route: RoutesProps) => (
-          <Route component={route.component} exact={route.exact} path={route.path} key={route.path} viewName={route.viewName} title={route.title} />
+          <Route
+            component={route.component}
+            exact={route.exact}
+            path={route.path}
+            key={route.path}
+            viewName={route.viewName}
+            title={route.title}
+          />
         ))}
       </Switch>
     </BrowserRouter>

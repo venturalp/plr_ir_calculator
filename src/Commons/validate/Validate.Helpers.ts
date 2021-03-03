@@ -27,7 +27,10 @@ export const validateData = async <F extends IErrorItem>(
       errorsList = err.inner.reduce(
         (errors: IErrorItem, currentError: IErrorItem) => ({
           ...errors,
-          [currentError.path]: currentError.errors[0],
+          [currentError.path]: {
+            error: true,
+            message: currentError.errors[0],
+          },
         }),
         {},
       )

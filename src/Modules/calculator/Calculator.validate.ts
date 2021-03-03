@@ -11,35 +11,20 @@ const calculatorFormScheme: yup.ObjectSchema = yup.object().shape({
     .min(1, 'Escolha pelo menos 1 mês trabalhado')
     .max(12, 'Máximo 12 meses de trabalho'),
   grossSalary: yup.number().typeError('Salário bruto deve ser um número'),
+  performance: yup
+    .number()
+    .typeError('Desempenho deve ser uma porcentagem')
+    .min(0, 'Porcentagem de desempenho não pode ser negativa'),
+  company: yup
+    .number()
+    .typeError('Desempenho da empresa deve ser uma porcentagem')
+    .min(0, 'Porcentagem desempenho da empresa não pode ser negativa'),
+  plrWeight: yup
+    .number()
+    .typeError('Peso deve ser um valor')
+    .min(0, 'Peso de PLR não pode ser negativo'),
 })
 
-const calculatorGoalsScheme: yup.ObjectSchema = yup.object().shape({
-  goals: yup.array().of(
-    yup.object().shape({
-      minimum: yup
-        .number()
-        .typeError('Metas devem ser um número')
-        .min(0, 'Metas não podem ser negativas'),
-      average: yup
-        .number()
-        .typeError('Metas devem ser um número')
-        .min(0, 'Metas não podem ser negativas'),
-      maximum: yup
-        .number()
-        .typeError('Metas devem ser um número')
-        .min(0, 'Metas não podem ser negativas'),
-      achieved: yup
-        .number()
-        .typeError('Metas devem ser um número')
-        .min(0, 'Metas não podem ser negativas'),
-    }),
-  ),
-})
-
-export const validateCalculatorForm = async <F extends unknown>(
+export const validateCalculatorForm = async <F>(
   formData: F,
 ): Promise<IErrorValidation> => validateData(calculatorFormScheme, formData)
-
-export const validateCalculatorGoals = async <F extends unknown>(
-  formData: F,
-): Promise<IErrorValidation> => validateData(calculatorGoalsScheme, formData)
