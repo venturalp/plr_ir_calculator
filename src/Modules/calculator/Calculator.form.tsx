@@ -128,7 +128,9 @@ export const CalculatorForm: React.FC = () => {
     const validateForm = await validateCalculatorForm(formSubmit)
     if (!validateForm.isValid) setErrors(validateForm.errors)
     else {
-      let netValue: number = currency(formSubmit.monthsWorked)
+      let netValue: number = currency(formSubmit.monthsWorked, {
+        precision: 10,
+      })
         .divide(12)
         .multiply(formSubmit.plrWeight)
         .multiply(formSubmit.grossSalary).value
@@ -138,7 +140,9 @@ export const CalculatorForm: React.FC = () => {
       const companyValue: number = currency(formSubmit.company).divide(100)
         .value
 
-      netValue = currency(netValue)
+      netValue = currency(netValue, {
+        precision: 10,
+      })
         .multiply(performanceValue)
         .multiply(companyValue).value
       const getAliquota: Aliquota = irPlrTable.filter(
@@ -155,14 +159,16 @@ export const CalculatorForm: React.FC = () => {
         },
       )?.[0]
 
-      const deduceFrom: number = currency(netValue).multiply(
-        getAliquota.percent,
-      ).value
-      const toDeduce: number = currency(deduceFrom).subtract(
-        getAliquota.deduction,
-      ).value
+      const deduceFrom: number = currency(netValue, {
+        precision: 10,
+      }).multiply(getAliquota.percent).value
+      const toDeduce: number = currency(deduceFrom, {
+        precision: 10,
+      }).subtract(getAliquota.deduction).value
       setResults({ ...results, grossValue: netValue })
-      netValue = currency(netValue).subtract(toDeduce).value
+      netValue = currency(netValue, {
+        precision: 10,
+      }).subtract(toDeduce).value
 
       setResults((previous: IResults) => ({
         ...previous,
